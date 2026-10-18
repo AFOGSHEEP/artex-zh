@@ -164,25 +164,25 @@ export async function http<T>(path: string, init?: RequestInit): Promise<T> {
 // Token is appended as ?token= because SSE can't carry cookies cross-origin.
 // mockReport returns a canned Markdown report for the demo.
 function mockReport(_task?: string): string {
-  return `# ARTEX 침투 테스트 보고서: Acme Corp
+  return `# ARTEX 渗透测试报告：Acme Corp
 
-## 개요
-- 범위: acme.com (www / admin / api / shop / vpn 서브도메인 포함)
-- 확인된 발견: 6건 (고위험 3 · 중위험 3 · 저위험 2)
-- 엔진 모드: exploring
+## 概述
+- 范围：acme.com（含 www / admin / api / shop / vpn 子域名）
+- 确认发现：6 项（高危 3 · 中危 3 · 低危 2）
+- 引擎模式：exploring
 
-## 주요 발견
-1. **[높음] 백오피스 기본 비밀번호** admin.acme.com admin/admin123 → 백오피스를 완전히 장악할 수 있습니다.
-2. **[높음] SQL 인젝션** www.acme.com/search?q= → acme_prod 데이터베이스를 읽을 수 있습니다.
-3. **[높음] IDOR** api.acme.com/v1/orders?id= → 권한을 우회해 타인의 주문(휴대폰 번호/주소 포함)을 읽을 수 있습니다.
-4. **[중간] 반사형 XSS**, **.git 소스 코드 노출**, **로그인 속도 제한 없음**.
+## 主要发现
+1. **[高危] 后台默认口令** admin.acme.com admin/admin123 → 可完全接管后台。
+2. **[高危] SQL 注入** www.acme.com/search?q= → 可读取 acme_prod 数据库。
+3. **[高危] IDOR** api.acme.com/v1/orders?id= → 可越权读取他人订单（含手机号/地址）。
+4. **[中危] 反射型 XSS**、**.git 源码暴露**、**登录无速率限制**。
 
-## 권고
-- 백오피스 비밀번호를 강제로 변경하고 MFA 를 활성화하며 기본 비밀번호를 차단합니다.
-- search 엔드포인트에 파라미터화 쿼리를 적용하고 출력을 인코딩합니다.
-- API 에 객체 수준 권한 검증(IDOR)을 추가하고 강력한 JWT 키로 교체합니다.
+## 建议
+- 强制修改后台口令并启用 MFA，封禁默认口令。
+- search 端点改用参数化查询并对输出编码。
+- API 增加对象级权限校验（IDOR），更换强 JWT 密钥。
 
-> (demo) 본 보고서는 mock 데이터로 생성되었으며 화면 데모용입니다.`;
+> (demo) 本报告由 mock 数据生成，仅用于界面演示。`;
 }
 
 export function sseUrl(path: string): string {

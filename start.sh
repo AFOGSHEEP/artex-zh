@@ -21,7 +21,7 @@ set -u
 cd "$(dirname "$0")" || exit 1
 
 BIN=./artex
-[ -x "$BIN" ] || { echo "[artex] 실행 파일을 찾을 수 없습니다: $BIN" >&2; exit 1; }
+[ -x "$BIN" ] || { echo "[artex] 找不到可执行文件：$BIN" >&2; exit 1; }
 
 RESTART_CODE=75
 MAX_DELAY=60

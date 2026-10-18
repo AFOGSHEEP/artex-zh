@@ -55,7 +55,7 @@
 用于入侵调查中在跳板/中继主机上寻找 ARTEX 安装运行的痕迹。
 
 - **默认监听端口 `:8787`。** ARTEX 服务端默认 HTTP 监听地址（`cmd/artex/main.go`，可用 `--addr` 修改）。内网主机在该端口开着管理 UI（仪表盘/任务/资产图）即应怀疑 ARTEX 实例。
-- **记录型 MITM 代理 `127.0.0.1:8788`。** 拦截并记录 worker Bash/HTTP 执行的本地代理默认地址（`--proxy` 默认值，仅回环）。它生成自有 CA 解密并记录 TLS（`mitmproxy-ca-cert.pem`），因此主机上是否存在 **ARTEX 安装的受信 CA 证书**、是否向子进程注入 `HTTP_PROXY` 与代理 CA 路径环境变量，都是线索。注入进入 ARTEX 生成的所有 worker 工具且变量名硬编码于源码（`agent/worker.go`），**运行中的进程同时携带代理变量与 mitmproxy CA 信任变量**是比端口号更特异的指纹。[主机分诊工具](../detections/triage/README.zh.md)从 `/proc`（取证镜像则为环境变量转储）核对该组合。
+- **记录型 MITM 代理 `127.0.0.1:8788`。** 拦截并记录 worker Bash/HTTP 执行的本地代理默认地址（`--proxy` 默认值，仅回环）。它生成自有 CA 解密并记录 TLS（`mitmproxy-ca-cert.pem`），因此主机上是否存在 **ARTEX 安装的受信 CA 证书**、是否向子进程注入 `HTTP_PROXY` 与代理 CA 路径环境变量，都是线索。注入进入 ARTEX 生成的所有 worker 工具且变量名硬编码于源码（`agent/worker.go`），**运行中的进程同时携带代理变量与 mitmproxy CA 信任变量**是比端口号更特异的指纹。[主机分诊工具](../detections/triage/README.md)从 `/proc`（取证镜像则为环境变量转储）核对该组合。
 - **自更新回调 `artex-selfupdate`。** 自更新查询 GitHub Releases 时使用的 User-Agent（`selfupdate/`）。出网日志中若看到该 UA 访问代码托管主机，提示存在 ARTEX 二进制。
 - **PostgreSQL 中的双图。** 存在 `exploration_nodes`、`assets`、`companies`、`activity` 等表与 `agent_prompts` 种子数据的数据库是 ARTEX 数据存储的特征。
 - **基于数据库的正则审批规则与审计日志。** 评估工具调用的 intercept 规则存于数据库并按优先级以正则求值（`intercept/`）；被拦截的调用在审计日志（`GET /api/audit`）中以 `【ARTEX 平台管控·非目标防御】` 开头的管控措辞记录——受损主机审计记录中出现该字符串可佐证 ARTEX 运行。
@@ -121,7 +121,7 @@
 
 ## 4. 检测规则与日志模式（实战）
 
-以不绑定具体产品的**伪规则**记录，请翻译成自己的 WAF/IPS/SIEM 语法。其中基于静态指纹的部分已提供可直接部署的 [Sigma 规则（`detections/sigma/`）](../detections/README.zh.md)；核心的行为/关联检测（4.1、4.2）虽无法还原成单条规则，但其中能以 ARTEX 源码佐证的行为指标（补全查询速率、补全目标数、guard 拦截爆发、guard 标记与破坏性命令同主机并发）也提供了可部署的 [Sigma 关联规则（`detections/sigma/correlation/`）](../detections/README.zh.md)。其纯 Web 多阶段关联（枚举 → 探测 → 认证）无法还原为单一 ARTEX 专属 UA，需要按环境定制基线规则——4.2 给出了可直接部署的通用行为型 Sigma 基线模板，请按自己的 SIEM 与基线调优后作为起点。网络层明文 HTTP（或 TLS 终结点）可观测的 ARTEX User-Agent 共两种，均已提供 [Suricata 规则（`detections/suricata/`）](../detections/suricata/README.zh.md)：补全探测的 `artex-enrich/1.0`（存在特征 sid 1000001、高速枚举变体 sid 1000002），以及 norma SDK WebFetch 在攻击阶段发出的 `norma/0.4`（sid 1000003）。
+以不绑定具体产品的**伪规则**记录，请翻译成自己的 WAF/IPS/SIEM 语法。其中基于静态指纹的部分已提供可直接部署的 [Sigma 规则（`detections/sigma/`）](../detections/README.zh.md)；核心的行为/关联检测（4.1、4.2）虽无法还原成单条规则，但其中能以 ARTEX 源码佐证的行为指标（补全查询速率、补全目标数、guard 拦截爆发、guard 标记与破坏性命令同主机并发）也提供了可部署的 [Sigma 关联规则（`detections/sigma/correlation/`）](../detections/README.zh.md)。其纯 Web 多阶段关联（枚举 → 探测 → 认证）无法还原为单一 ARTEX 专属 UA，需要按环境定制基线规则——4.2 给出了可直接部署的通用行为型 Sigma 基线模板，请按自己的 SIEM 与基线调优后作为起点。网络层明文 HTTP（或 TLS 终结点）可观测的 ARTEX User-Agent 共两种，均已提供 [Suricata 规则（`detections/suricata/`）](../detections/suricata/README.md)：补全探测的 `artex-enrich/1.0`（存在特征 sid 1000001、高速枚举变体 sid 1000002），以及 norma SDK WebFetch 在攻击阶段发出的 `norma/0.4`（sid 1000003）。
 
 ### 4.1 WAF/IPS（行为模式）
 

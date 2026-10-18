@@ -42,13 +42,13 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: npm ci
         run: npm ci
-      - name: build:static (머지 게이트 · 타입 검사 포함)
+      - name: build:static（合并门禁 · 含类型检查）
         run: npm run build:static
-      - name: UI 한자 누출 가드 (머지 게이트 · out HTML 에 중국어 0)
+      - name: UI 韩文残留门禁（合并门禁 · out HTML 零韩文）
         # 이 포크의 핵심 성과는 "用户可见界面没有韩文残留"는 것이다.
         # 기여자가 중국어를 하드코딩하거나 번역이 누락되는 회귀를 머지 전에 막는다.
         # 스크립트는 git 루트의 web/out 를 스스로 찾으므로 작업 디렉터리와 무관하다.
         run: python3 -I ../scripts/check-web-cjk.py
-      - name: biome check (머지 게이트 · lint·format·a11y 오류 0 유지)
+      - name: biome check（信息步骤 · 保持 lint/format/a11y 错误为 0）
         if: always()
         run: npm run check

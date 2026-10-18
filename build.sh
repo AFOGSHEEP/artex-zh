@@ -29,19 +29,19 @@ die() { printf '\033[31m[x]\033[0m %s\n' "$*" >&2; exit 1; }
 
 usage() {
   cat <<'EOF'
-사용법:
-  ./build.sh                         현재 시스템·현재 아키텍처로 컴파일
-  ./build.sh --target linux/amd64   지정한 대상 하나를 컴파일
-  ./build.sh --release               지원하는 모든 대상을 컴파일하고 패키징
+用法:
+  ./build.sh                         按当前系统·当前架构编译
+  ./build.sh --target linux/amd64   编译指定的单个目标
+  ./build.sh --release               编译并打包所有支持的目标
 
-옵션:
-  --release              Linux, macOS, Windows 의 amd64/arm64 대상을 빌드하고 zip 생성
-  --target OS/ARCH       단일 대상을 지정합니다. 예: windows/amd64
-  --upx                  UPX 로 바이너리를 강제 압축합니다(일부 Linux 환경에서 호환성에 영향을 줄 수 있습니다)
-  --no-compress          UPX 를 쓰지 않고 Go linker 로만 축소한 뒤 zip 을 압축
-  --help                 도움말 표시
+选项:
+  --release              构建 Linux、macOS、Windows 的 amd64/arm64 目标并生成 zip
+  --target OS/ARCH       指定单个目标。例如：windows/amd64
+  --upx                  用 UPX 强制压缩二进制（可能影响部分 Linux 环境的兼容性）
+  --no-compress          不用 UPX，仅用 Go linker 缩小后打 zip
+  --help                 显示帮助
 
-여러 대상 목록은 ARTEX_TARGETS 로 재정의할 수 있습니다. 예:
+可用 ARTEX_TARGETS 覆盖多个目标列表。例如:
   ARTEX_TARGETS=linux/amd64,windows/amd64 ./build.sh --release
 EOF
 }
@@ -67,7 +67,7 @@ while [ "$#" -gt 0 ]; do
           ARTEX_TARGET_ARCH="${target_arg##*/}"
           ARTEX_TARGETS="$target_arg"
           ;;
-        *) die "대상은 OS/ARCH 형식이어야 합니다. 예: linux/amd64" ;;
+        *) die "目标必须是 OS/ARCH 形式。例如：linux/amd64" ;;
       esac
       shift 2
       ;;
@@ -114,8 +114,8 @@ fi
 if [ "${ARTEX_SKIP_FRONTEND:-0}" = "1" ]; then
   [ -d server/webui/dist ] || die "设置了 ARTEX_SKIP_FRONTEND=1 但 server/webui/dist 不存在"
 else
-  command -v npm >/dev/null 2>&1 || die "npm 을 찾을 수 없습니다(프런트엔드 정적 빌드에는 Node.js/npm 이 필요합니다)"
-  command -v rsync >/dev/null 2>&1 || die "rsync 를 찾을 수 없습니다"
+  command -v npm >/dev/null 2>&1 || die "找不到 npm（前端静态构建需要 Node.js/npm）"
+  command -v rsync >/dev/null 2>&1 || die "找不到 rsync"
   info "构建前端静态资源"
   if [ "${ARTEX_SKIP_NPM_CI:-0}" != "1" ]; then
     (cd web && npm ci)
@@ -131,7 +131,7 @@ compress_binary() {
   goos="$2"
   case "$ARTEX_COMPRESS" in
     0|off|false|none)
-      info "UPX 를 건너뜁니다: $binary"
+      info "跳过 UPX：$binary"
       return 0
       ;;
     auto|required|true|1) ;;
@@ -142,7 +142,7 @@ compress_binary() {
     if [ "$ARTEX_COMPRESS" = "required" ]; then
       die "ARTEX_COMPRESS=required 但找不到 upx"
     fi
-    warn "upx 를 찾을 수 없어 linker 압축 결과를 그대로 둡니다: $binary"
+    warn "找不到 upx，保留 linker 压缩结果：$binary"
     return 0
   fi
 
@@ -152,13 +152,13 @@ compress_binary() {
   # shellcheck disable=SC2086
   if ! upx $upx_args -- "$binary"; then
     if [ "$ARTEX_COMPRESS" = "required" ]; then
-      die "UPX 압축에 실패했습니다: $binary"
+      die "UPX 压缩失败：$binary"
     fi
-    warn "UPX 가 이 대상 형식을 지원하지 않아 압축하지 않은 바이너리를 그대로 둡니다: $binary"
+    warn "UPX 不支持该目标格式，保留未压缩二进制：$binary"
     return 0
   fi
   after=$(wc -c < "$binary" | tr -d ' ')
-  ok "UPX 압축 완료: $binary (${before} -> ${after} bytes)"
+  ok "UPX 压缩完成：$binary（${before} -> ${after} 字节）"
 }
 
 package_binary() {
@@ -186,7 +186,7 @@ package_binary() {
   if [ -f README.md ]; then cp README.md "$package_root/"; fi
   (cd "$ARTEX_PACKAGE_DIR" && zip -q -r -9 "$(basename "$archive")" "$(basename "$package_root")")
   rm -rf "$package_root"
-  ok "릴리스 압축 파일: $archive"
+  ok "发布压缩包：$archive"
 }
 
 build_target() {
@@ -199,7 +199,7 @@ build_target() {
   goarch="${target##*/}"
   case "$goos" in
     linux|darwin|windows) ;;
-    *) die "지원하지 않는 시스템입니다: $goos(linux, darwin, windows 를 지원합니다)" ;;
+    *) die "不支持的系统：$goos（支持 linux、darwin、windows）" ;;
   esac
 
   binary_name="artex"

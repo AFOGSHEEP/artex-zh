@@ -160,15 +160,15 @@ if [[ "$MODE" == "local" ]]; then
     fi
   fi
 
-  command -v psql >/dev/null 2>&1 || die "이 컴퓨터에서 psql 을 찾을 수 없습니다(postgresql-client 를 설치하거나 -m docker 를 사용하세요)"
+  command -v psql >/dev/null 2>&1 || die "本机找不到 psql（请安装 postgresql-client 或使用 -m docker）"
 
   declare -a PSQL_ARGS=()
   if [[ -n "$DSN" ]]; then
     PSQL_ARGS=("$DSN")
     target="$DSN"
   else
-    [[ -n "$USER"   ]] || die "데이터베이스 사용자(-U)가 없거나 유효한 config.json/DSN 이 없습니다"
-    [[ -n "$DBNAME" ]] || die "데이터베이스 이름(-d)이 없거나 유효한 config.json/DSN 이 없습니다"
+    [[ -n "$USER"   ]] || die "缺少数据库用户(-U)，或没有有效的 config.json/DSN"
+    [[ -n "$DBNAME" ]] || die "缺少数据库名(-d)，或没有有效的 config.json/DSN"
     HOST="${HOST:-127.0.0.1}"; PORT="${PORT:-5432}"; SSLMODE="${SSLMODE:-disable}"
     PSQL_ARGS=(-h "$HOST" -p "$PORT" -U "$USER" -d "$DBNAME")
     [[ -n "$SSLMODE" ]] && export PGSSLMODE="$SSLMODE"
@@ -179,7 +179,7 @@ if [[ "$MODE" == "local" ]]; then
   info "目标数据库：$target"
   if [[ "$ASSUME_YES" -ne 1 ]]; then
     read -r -p "在该数据库中重置 ARTEX 密码？[y/N]" ans
-    [[ "$ans" == "y" || "$ans" == "Y" ]] || die "취소했습니다"
+    [[ "$ans" == "y" || "$ans" == "Y" ]] || die "已取消"
   fi
 
   if ! printf '%s\n' "$SQL" | psql "${PSQL_ARGS[@]}" -v ON_ERROR_STOP=1 -q >/dev/null; then
@@ -213,7 +213,7 @@ else
   info "目标：容器 $CONTAINER 内 psql -U $DUSER -d $DNAME（exec=$EXEC_KIND）"
   if [[ "$ASSUME_YES" -ne 1 ]]; then
     read -r -p "在该容器数据库中重置 ARTEX 密码？[y/N]" ans
-    [[ "$ans" == "y" || "$ans" == "Y" ]] || die "취소했습니다"
+    [[ "$ans" == "y" || "$ans" == "Y" ]] || die "已取消"
   fi
 
   # -e 只给名字不给值 → 从当前环境继承，密码不会出现在 docker 命令行参数里。
@@ -227,7 +227,7 @@ else
   fi
 
   if ! printf '%s\n' "$SQL" | "${EXEC_CMD[@]}" >/dev/null; then
-    die "쓰기에 실패했습니다. 컨테이너명(-c), 데이터베이스 계정(.env 의 POSTGRES_*), 역할의 pgcrypto 권한을 확인하세요."
+    die "写入失败。请检查容器名(-c)、数据库账号（.env 的 POSTGRES_*）与角色的 pgcrypto 权限。"
   fi
 fi
 

@@ -29,5 +29,5 @@ jobs:
       # python3 는 ubuntu-latest 러너에 기본 설치되어 있고, 스크립트는 표준
       # 라이브러리만 쓰므로 별도 설치 단계가 필요 없다. -I 로 사용자 사이트·환경을
       # 격리해 실행한다.
-      - name: 문서 내부 링크·이미지·앵커 무결성 검사
+      - name: 文档内链·图片·锚点完整性检查
         run: python3 -I scripts/check-doc-links.py

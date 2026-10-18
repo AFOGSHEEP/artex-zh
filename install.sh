@@ -18,7 +18,7 @@ ensure_docker(){
   warn "找不到 docker / docker compose"
   case "$(uname -s)" in
     Linux)
-      if [ "$(ask 'Docker 를 자동으로 설치할까요? (y/n)' y)" = y ]; then
+      if [ "$(ask '是否自动安装 Docker？(y/n)' y)" = y ]; then
         curl -fsSL https://get.docker.com | sh
         sudo usermod -aG docker "$USER" || true
         ok "Docker 安装完成（用户组变更需重新登录后才能免 sudo 生效）"
@@ -41,15 +41,15 @@ install_docker(){
     sed -i.bak "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=${pw}|" .env
     sed -i.bak "s|^ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=${key}|" .env
     rm -f .env.bak
-    ok ".env 파일을 생성했습니다 (POSTGRES_PASSWORD 설정 완료)"
+    ok "已生成 .env 文件（POSTGRES_PASSWORD 已设置）"
   else
-    info "이미 있는 .env 파일을 그대로 사용합니다"
+    info "检测到已有 .env 文件，沿用原文件"
   fi
   info "拉取镜像并启动…"
   docker compose pull || true
   if ! docker compose up -d; then
-    warn "상류 이미지 autumn27/artex 를 Docker Hub 에서 받을 수 없어 기동에 실패했습니다(현재 상류에서 내려간 상태라 pull 이 거부됩니다)"
-    warn "한국어판 화면·출력은 이 스크립트를 다시 실행해 \"2) 로컬 실행 (go 컴파일)\" 을 고르거나, README \"소스에서 단일 바이너리 컴파일\" 路径构建"
+    warn "上游镜像 autumn27/artex 无法从 Docker Hub 拉取，启动失败（上游已下架，pull 被拒绝）"
+    warn "请重新运行本脚本选择 \"2) 本地运行（go 编译）\"，或按 README「从源码编译单二进制」一节操作"
     die "Docker Compose（全 Docker）路径当前无法拉取上游镜像，暂不可用"
   fi
   ok "启动完成 → http://localhost:8787"
@@ -91,7 +91,7 @@ install_local(){
   }
 }
 JSON
-  ok "config.json 파일을 생성했습니다"
+  ok "已生成 config.json 文件"
 
   # go 환경 확인
   command -v go >/dev/null 2>&1 || die "找不到 Go，请先安装 Go (>=1.26)：https://go.dev/dl/"
@@ -105,10 +105,10 @@ JSON
     info "编译内嵌前端的单二进制…"
     CGO_ENABLED=0 go build -tags embedui -trimpath -o artex ./cmd/artex
   else
-    warn "npm 을 찾을 수 없습니다: 프런트엔드를 내장하지 않은 백엔드만 컴파일합니다 (프런트엔드는 npm run dev 로 따로 실행)"
+    warn "找不到 npm：只编译不含前端的后端（前端需另以 npm run dev 运行）"
     CGO_ENABLED=0 go build -o artex ./cmd/artex
   fi
-  ok "컴파일을 완료했습니다 → ./artex"
+  ok "编译完成 → ./artex"
 
   info "启动中…（Ctrl-C 退出）"
   ./artex

@@ -15,7 +15,7 @@ ask(){  local p="$1" d="${2:-}" a; read -rp "$p${d:+ [$d]}: " a; echo "${a:-$d}"
 # ── 선택: 저장소를 최신 코드로 동기화합니다(compose·스크립트·로컬 컴파일 소스가 모두 이걸로 갱신됩니다) ───────
 sync_repo(){
   [ -d .git ] && command -v git >/dev/null 2>&1 || { warn "不是 git 工作副本，跳过 git pull"; return; }
-  [ "$(ask '최신 코드를 받을까요 (git pull --ff-only)? (y/n)' y)" = y ] || return
+  [ "$(ask '是否拉取最新代码（git pull --ff-only）？(y/n)' y)" = y ] || return
   if ! git pull --ff-only; then
     warn "git pull 无法快进（存在本地改动或分支分叉）。请处理后重试；本次直接使用当前代码"
   fi
@@ -24,11 +24,11 @@ sync_repo(){
 # ── ① Docker 업데이트 ───────────────────────────────
 update_docker(){
   command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1 \
-    || die "docker / docker compose 를 찾을 수 없습니다. 먼저 ./install.sh 로 설치·배포하세요"
-  [ -f .env ] || die ".env 를 찾을 수 없습니다. 먼저 ./install.sh 로 최초 배포를 완료하세요"
+    || die "找不到 docker / docker compose。请先用 ./install.sh 完成安装部署"
+  [ -f .env ] || die "找不到 .env。请先用 ./install.sh 完成首次部署"
 
   # 선택: 지정한 버전 tag 로 업그레이드합니다(비워 두면 .env 의 ARTEX_TAG 를 따르고, 기본값은 latest 입니다)
-  local tag; tag="$(ask '대상 이미지 tag(엔터를 누르면 .env / latest 사용)' '')"
+  local tag; tag="$(ask '目标镜像 tag（回车则用 .env / latest）' '')"
   if [ -n "$tag" ]; then
     if grep -q '^ARTEX_TAG=' .env; then
       sed -i.bak "s|^ARTEX_TAG=.*|ARTEX_TAG=${tag}|" .env && rm -f .env.bak
@@ -43,20 +43,20 @@ update_docker(){
   # up 하면 pg 가 안 떠 있을 때 자동으로 띄우고, 이미 떠 있으면 그대로 두고 재구성하지 않습니다.
   info "拉取新镜像（仅 artex）…"
   if ! docker compose pull artex; then
-    warn "상류 이미지 autumn27/artex 를 Docker Hub 에서 받을 수 없습니다(현재 상류에서 내려간 상태라 pull 이 거부됩니다)"
-    die "Docker 이미지 업데이트 경로는 현재 사용할 수 없습니다. 한국어판은 \"2) 로컬 업데이트(go 로 다시 컴파일)\" 路径构建"
+    warn "上游镜像 autumn27/artex 无法从 Docker Hub 拉取（上游已下架，pull 被拒绝）"
+    die "Docker 镜像更新路径当前不可用。请选择 \"2) 本地更新（go 重新编译）\""
   fi
   info "重建后启动（artex 重启时会自动迁移 schema）…"
   docker compose up -d artex
   ok "更新完成 → http://localhost:8787"
   info "查看日志：docker compose logs -f artex"
-  info "오래된 이미지 정리(선택): docker image prune -f"
+  info "清理旧镜像（可选）：docker image prune -f"
 }
 
 # ── ② 로컬 컴파일 업데이트 ──────────────────────────────
 update_local(){
   command -v go >/dev/null 2>&1 || die "找不到 Go (>=1.26)：https://go.dev/dl/"
-  [ -f config.json ] || warn "config.json 을 찾을 수 없습니다. 최초 배포라면 ./install.sh 를 사용하세요"
+  [ -f config.json ] || warn "找不到 config.json。首次部署请使用 ./install.sh"
   ok "Go: $(go version)"
 
   if command -v npm >/dev/null 2>&1; then
@@ -66,10 +66,10 @@ update_local(){
     info "重新编译内嵌前端的单二进制…"
     CGO_ENABLED=0 go build -tags embedui -trimpath -o artex ./cmd/artex
   else
-    warn "npm 을 찾을 수 없습니다. 프런트엔드를 내장하지 않은 백엔드만 컴파일합니다(프런트엔드는 npm run dev 로 따로 실행해야 합니다)"
+    warn "找不到 npm。只编译不含前端的后端（前端需另以 npm run dev 运行）"
     CGO_ENABLED=0 go build -o artex ./cmd/artex
   fi
-  ok "컴파일 완료 → ./artex"
+  ok "编译完成 → ./artex"
   warn "重启运行中的 artex 进程以应用变更（重启时自动迁移 schema）"
 }
 

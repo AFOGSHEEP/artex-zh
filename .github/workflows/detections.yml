@@ -60,23 +60,23 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: 테스트 하네스 레지스트리 동기 검사 (run-all.sh ↔ CI ↔ 디렉터리)
+      - name: 测试装置注册表同步检查（run-all.sh ↔ CI ↔ 目录）
         run: detections/tests/check-harness-sync.sh
-      - name: 호스트 트리아지 도구 자가 테스트 (artex_host_triage.py --self-test · 규칙 아닌 게이트)
+      - name: 主机分诊工具自测（artex_host_triage.py --self-test · 非规则门禁）
         run: detections/tests/triage-selftest.sh
-      - name: Sigma 규칙 재현 테스트 (sigma check + 백엔드 변환 + 지표 보존)
+      - name: Sigma 规则复现测试（sigma check + 后端转换 + 指标存活）
         run: detections/tests/sigma/run.sh
-      - name: Sigma 실제 이벤트 매칭 테스트 (원자·상관 규칙이 악성 샘플/타임라인에 발화·정상에 침묵)
+      - name: Sigma 实时事件匹配测试（原子/关联规则对恶意样本触发、对正常静默）
         run: detections/tests/sigma_match/run.sh
-      - name: Sigma SigmaHQ 관례 린트 (전체 검증기 세트 + 문서화된 기준)
+      - name: Sigma SigmaHQ 惯例 lint（全量校验器 + 文档化基线）
         run: detections/tests/sigma_lint/run.sh
-      - name: Sigma 백엔드 이식성 테스트 (상관 규칙이 여러 백엔드에서 변환되는지 확인)
+      - name: Sigma 后端可移植性测试（验证关联规则在多后端可转换）
         run: detections/tests/sigma_backends/run.sh
-      - name: Suricata 규칙 재현 테스트 (pcap 합성 → suricata -r → 경보 수 단언)
+      - name: Suricata 规则复现测试（合成 pcap → suricata -r → 断言告警数）
         run: detections/tests/suricata/run.sh
-      - name: ATT&CK 레이어 ↔ 규칙 정합 테스트
+      - name: ATT&CK 层 ↔ 规则一致性测试
         run: detections/tests/attack/run.sh
-      - name: 탐지 지표 ↔ 상류 소스 일치 테스트 (상류 재동기화 드리프트 가드)
+      - name: 检测指标 ↔ 上游源码一致性测试（防再同步漂移）
         run: detections/tests/indicators/run.sh
-      - name: 지표 MISP 내보내기 ↔ CSV 동기화 테스트 (pymisp 로 MISP 형식 유효성 검증)
+      - name: 指标 MISP 导出 ↔ CSV 同步测试（pymisp 验证 MISP 格式）
         run: detections/tests/misp/run.sh

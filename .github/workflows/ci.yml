@@ -29,7 +29,7 @@ jobs:
         run: go build ./...
       - name: go vet
         run: go vet ./...
-      - name: go test (DB 없음 — 통합 테스트는 스킵)
+      - name: go test（无 DB —— 集成测试跳过）
         run: go test ./... -count=1
 
   # 실제 PostgreSQL 이 있어야 도는 DB 통합 테스트(알림·증거·사용량 계량 등)를 맡는다.
@@ -70,7 +70,7 @@ jobs:
         with:
           go-version: "1.26"
           cache: true
-      - name: go test (DB 통합 · ${{ matrix.pkg }} 패키지 격리)
+      - name: go test（DB 集成 · ${{ matrix.pkg }} 按包隔离）
         env:
           ARTEX_PG_DSN: postgres://artex:artex@localhost:5432/artex?sslmode=disable
         run: go test ./${{ matrix.pkg }}/ -count=1

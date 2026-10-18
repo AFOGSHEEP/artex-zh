@@ -106,7 +106,7 @@ jobs:
     outputs:
       publish: ${{ steps.check.outputs.publish }}
     steps:
-      - name: Docker Hub 발행 자격증명 확인
+      - name: 检查 Docker Hub 发布凭据
         id: check
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -116,7 +116,7 @@ jobs:
             echo "publish=true" >> "$GITHUB_OUTPUT"
           else
             echo "publish=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::DOCKERHUB_USERNAME/DOCKERHUB_TOKEN 시크릿이 없어 Docker 이미지 발행(docker 잡)을 건너뜁니다. 바이너리 릴리스는 정상 진행됩니다."
+            echo "::notice::未配置 DOCKERHUB_USERNAME/DOCKERHUB_TOKEN secrets，跳过 Docker 镜像发布（docker job）。二进制发布正常进行。"
           fi
 
   # ④ 다중 아키텍처 이미지 → Docker Hub 에 push(binaries 가 빌드한 Linux 바이너리를 재사용하고,
