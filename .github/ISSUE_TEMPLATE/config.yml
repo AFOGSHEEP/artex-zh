@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 安全漏洞报告 · Report a security vulnerability
+    url: https://github.com/AFOGSHEEP/artex-zh/security/policy
+    about: 安全漏洞请勿以公开 issue 提交，请按安全政策（SECURITY.md · English SECURITY.en.md）的非公开流程报告。/ Do not file security vulnerabilities as public issues; follow the private process in the security policy.
+  - name: 📜 使用范围与法律声明 · Authorized use and legal notice
+    url: https://github.com/AFOGSHEEP/artex-zh#-安全与滥用警告请务必先读
+    about: ARTEX 只能用于自己拥有或获得授权的目标，或本地隔离环境。使用前请先阅读 README 的使用范围与法律声明。/ ARTEX may be used only against targets you own or are authorized to test, or in a local isolated environment.

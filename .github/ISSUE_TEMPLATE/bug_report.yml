@@ -1,0 +1,76 @@
+name: 🐛 Bug 报告
+description: 报告行为与预期不符或出现错误的问题。
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢报告。填写以下各项可以让复现与修复更快。
+        **安全漏洞请勿使用本模板，请走 [SECURITY.md](https://github.com/AFOGSHEEP/artex-zh/security/policy) 的非公开流程。**
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: 确认
+      options:
+        - label: 已搜索过是否已有类似 issue。
+          required: true
+        - label: 该问题是在自己拥有/已授权目标或本地隔离环境中复现的。
+          required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么
+      description: 请同时写明期望行为与实际行为。
+      placeholder: "例如：检测结果应输出中文却输出了韩文。"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      description: 请按顺序写出能重新触发问题的步骤。
+      placeholder: |
+        1. 进入 '...' 页面
+        2. 执行 '...'
+        3. 在 '...' 出现错误
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志·截图
+      description: 请附上相关日志或界面截图；敏感值（API key、token、目标地址）请打码。
+      render: shell
+    validations:
+      required: false
+  - type: dropdown
+    id: component
+    attributes:
+      label: 领域
+      description: 请选择出现问题的组件。
+      options:
+        - 智能体 (agent)
+        - Web UI / 服务端 (web / server)
+        - 安装·部署（Docker、脚本）
+        - LLM 供应商对接
+        - 文档·翻译
+        - 不确定
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      description: 请填写 Release 标签或提交哈希。
+      placeholder: "例如：v2.2.0 或 b45ba04"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: 运行环境
+      description: 请填写 OS、是否使用 Docker、LLM 模型等。
+      placeholder: "例如：macOS 15 / Docker Compose / claude-opus-4-8"
+    validations:
+      required: false

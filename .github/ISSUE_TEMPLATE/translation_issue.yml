@@ -1,0 +1,56 @@
+name: 🌐 翻译 / 本地化问题
+description: 报告读起来别扭、有误或缺失的中文文案（含残留韩文/英文）。
+title: "[翻译] "
+labels: ["i18n"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢帮助改进中文版质量。
+        本仓库的本地化原则：**只把用户可见的产出译为简体中文；agent 的内部推理提示词与命令、payload、代码、日志原文保持不变。**
+        完整原则见 [CONTRIBUTING.md](https://github.com/AFOGSHEEP/artex-zh/blob/main/CONTRIBUTING.md#本地化原则)。
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 属于哪类问题
+      options:
+        - 译文生硬、不自然
+        - 译文有误（含义有偏差）
+        - 缺失翻译（仍显示韩文/英文）
+        - 不该翻译的被翻译了（命令、代码、日志等）
+        - 术语需要统一
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: 在哪里看到
+      options:
+        - Web UI
+        - Agent 产出（检测结果、摘要、报告、聊天回复）
+        - 文档（README 等）
+        - 其他
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: 现在的文案
+      description: 请原样粘贴当前文本，并说明所在页面或场景。
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: 建议的文案
+      description: 建议怎么改。（可选）
+    validations:
+      required: false
+  - type: input
+    id: key
+    attributes:
+      label: 文案 key / 文件位置
+      description: 仅在你知道时填写。例如 web/messages/zh.json 里的 key 或文件路径。
+      placeholder: "例如：web/messages/zh.json → dashboard.title"
+    validations:
+      required: false

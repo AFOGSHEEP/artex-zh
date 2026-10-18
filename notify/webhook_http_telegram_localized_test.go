@@ -1,0 +1,220 @@
+package notify
+
+import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+	"unicode"
+)
+
+// 이 파일은 F4 ④⑤(telegram·webhook·공용 HTTP 전송 계층) 한국어화를 회귀로부터
+// 지킨다. telegram.go 의 메시지 라벨·배치 제목, webhook.go 의 설정 검증 오류,
+// http.go 의 전송 오류, 그리고 다섯 채널이 공유하는 validateHTTPURL 이 중국어로
+// 되돌아가면 잡아낸다. 헬퍼 hasHan·hasHangul·assertZh 은
+// notify_localized_test.go 에 있다(같은 패키지).
+//
+// 데이터(제목·유형·자산·개요)는 전부 ASCII 로 둔다. 그래야 "출력 전체에 한자 0"
+// 이라는 단언이 콘텐츠가 아니라 골격 라벨의 회귀만 정확히 포착한다. 심각도·상태
+// 라벨은 F4 ①에서 이미 한국어라 출력에 한글로 나오며(한자 아님) 단언을 통과한다.
+
+// TestTelegramItemLabelsLocalized 는 단건 Telegram 메시지의 모든 라벨 분기를 켠 뒤
+// 골격이 한국어이고 중국어 한자가 없음을 확인한다.
+func TestTelegramItemLabelsLocalized(t *testing.T) {
+	m := Message{
+		HomeURL: "https://example.com/panel",
+		Items: []Item{{
+			Name:       "sqli-login", // Title() = Name
+			VulnClass:  "injection",  // Title() 과 달라야 유형 줄이 렌더됨
+			Severity:   "high",       // SeverityLabel → 높음(한글)
+			Summary:    "login form is injectable",
+			Assets:     []string{"host-a.example.com"},
+			DetailURL:  "https://example.com/f/1",
+			FromStatus: "pending", // IsStatusChange()=true → 상태 변경 줄
+			ToStatus:   "fixed",
+		}},
+	}
+	out, kept := telegramHTML(m)
+	if kept != 1 {
+		t.Fatalf("单条消息应报告 1，实际 %d", kept)
+	}
+	if hasHan(out) {
+		t.Errorf("Telegram 正文仍残留韩文：\n%s", out)
+	}
+	for _, want := range []string{"状态变更", "类别", "资产", "概述", "查看详情"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("Telegram 正文缺少标签 %q：\n%s", want, out)
+		}
+	}
+}
+
+// TestTelegramBatchTitleLocalized 는 배치(digest) 제목의 넘침·시간창 분기가
+// 한국어로 렌더되는지 확인한다. markdownTitle 과 글자까지 맞춰야 채널 간 혼재가
+// 생기지 않는다.
+func TestTelegramBatchTitleLocalized(t *testing.T) {
+	items := []Item{{Name: "a", Severity: "high"}, {Name: "b", Severity: "low"}}
+
+	// 넘침 있음 + 시간창: 요약·총건수·앞 N건·나머지·다음 메시지·최근 N분간.
+	over := telegramBatchTitle(Message{WindowMinutes: 30}, items, 5)
+	assertZh(t, "telegramBatchTitle(溢出)", over)
+	for _, want := range []string{"漏洞汇总 · 共 5 条", "显示前 2 条", "其余 3 条", "下一条继续", "近 30 分钟"} {
+		if !strings.Contains(over, want) {
+			t.Errorf("溢出标题缺少 %q：%q", want, over)
+		}
+	}
+
+	// 넘침 없음 + 시간창 없음: 다음 메시지 안내가 없어야 한다.
+	full := telegramBatchTitle(Message{}, items, 2)
+	assertZh(t, "telegramBatchTitle(全量)", full)
+	if !strings.Contains(full, "漏洞汇总 · 共 2 条") {
+		t.Errorf("全量标题应包含 '漏洞汇总 · 共 2 条'：%q", full)
+	}
+	if strings.Contains(full, "下一条继续") {
+		t.Errorf("未溢出却出现 '下一条继续' 提示：%q", full)
+	}
+}
+
+// TestTelegramValidateLocalized 는 필수 필드 누락 오류가 한국어이고 어떤 필드가
+// 비었는지 알려 주는지 확인한다. 기술 용어 Bot Token·Chat ID 는 그대로 보존한다.
+func TestTelegramValidateLocalized(t *testing.T) {
+	if err := (telegramChannel{}).Validate(map[string]any{}); err == nil {
+		t.Fatal("缺少 bot_token 应校验失败")
+	} else {
+		assertZh(t, "telegram Validate(bot_token)", err.Error())
+		if !strings.Contains(err.Error(), "Bot Token") {
+			t.Errorf("应提示缺少 Bot Token：%q", err.Error())
+		}
+	}
+	if err := (telegramChannel{}).Validate(map[string]any{"bot_token": "t"}); err == nil {
+		t.Fatal("缺少 chat_id 应校验失败")
+	} else {
+		assertZh(t, "telegram Validate(chat_id)", err.Error())
+		if !strings.Contains(err.Error(), "Chat ID") {
+			t.Errorf("应提示缺少 Chat ID：%q", err.Error())
+		}
+	}
+}
+
+// TestWebhookValidateLocalized 는 범용 Webhook 설정 검증 오류 세 가지가 한국어이고
+// 각 오류가 문제의 원인을 알려 주는지 확인한다.
+func TestWebhookValidateLocalized(t *testing.T) {
+	if err := (webhookChannel{}).Validate(map[string]any{}); err == nil {
+		t.Fatal("缺少 url 应校验失败")
+	} else {
+		assertZh(t, "webhook Validate(url)", err.Error())
+		if !strings.Contains(err.Error(), "目标 URL") {
+			t.Errorf("应提示缺少目标 URL：%q", err.Error())
+		}
+	}
+	// 지원하지 않는 메서드: 한국어 + 허용 목록 노출.
+	if err := (webhookChannel{}).Validate(map[string]any{"url": "https://example.com/hook", "method": "DELETE"}); err == nil {
+		t.Fatal("DELETE 应校验失败")
+	} else {
+		assertZh(t, "webhook Validate(method)", err.Error())
+		if !strings.Contains(err.Error(), "GET/POST/PUT/PATCH") {
+			t.Errorf("应提示可用方法列表：%q", err.Error())
+		}
+	}
+	// 템플릿 문법 오류: 한국어(래핑된 원인은 Go 템플릿 오류라 한자가 없다).
+	if err := (webhookChannel{}).Validate(map[string]any{"url": "https://example.com/hook", "body_template": "{{"}); err == nil {
+		t.Fatal("损坏模板应校验失败")
+	} else {
+		assertZh(t, "webhook Validate(template)", err.Error())
+		if !strings.Contains(err.Error(), "模板") {
+			t.Errorf("应提示模板错误：%q", err.Error())
+		}
+	}
+}
+
+// TestValidateHTTPURLLocalized 는 다섯 채널(telegram·webhook·dingtalk·feishu·wecom)이
+// 공유하는 URL 검증 헬퍼의 오류가 한국어인지 확인한다. 이 헬퍼가 중국어로 남아 있으면
+// 한국어 접두("API 주소가 올바르지 않습니다: ...")와 섞여 반한반중이 된다.
+func TestValidateHTTPURLLocalized(t *testing.T) {
+	// 지원하지 않는 스킴.
+	if err := validateHTTPURL("ftp://example.com/x"); err == nil {
+		t.Fatal("ftp 协议应被拒绝")
+	} else {
+		assertZh(t, "validateHTTPURL(scheme)", err.Error())
+		if !strings.Contains(err.Error(), "http") {
+			t.Errorf("应提示支持的协议(http/https)：%q", err.Error())
+		}
+	}
+	// 호스트 이름 없음.
+	if err := validateHTTPURL("http://"); err == nil {
+		t.Fatal("无主机地址应被拒绝")
+	} else {
+		assertZh(t, "validateHTTPURL(host)", err.Error())
+	}
+}
+
+// TestHTTPLocalTargetBlockedLocalized 는 로컬/링크 로컬 주소 차단 오류가 한국어이고
+// 우회 방법(환경 변수)을 알려 주는지 확인한다.
+func TestHTTPLocalTargetBlockedLocalized(t *testing.T) {
+	t.Setenv(AllowLocalTargetsEnv, "") // 명시적으로 꺼서 차단 경로를 탄다
+	err := blockInternalDial("tcp", "127.0.0.1:25", nil)
+	if err == nil {
+		t.Fatal("本机地址默认应被拦截")
+	}
+	assertZh(t, "blockInternalDial", err.Error())
+	if !strings.Contains(err.Error(), AllowLocalTargetsEnv) {
+		t.Errorf("拦截错误应给出绕过方法(%s)：%q", AllowLocalTargetsEnv, err.Error())
+	}
+}
+
+// TestHTTPRedactHelpersLocalized 는 주소 탈감(redact) 자리표시자와 전송 오류의
+// "未知错误" 분기가 한국어인지 확인한다.
+func TestHTTPRedactHelpersLocalized(t *testing.T) {
+	if got := redactRequestTarget(""); !strings.Contains(got, "地址不可解析") {
+		t.Errorf("不可解析地址应为中文占位符，实际 %q", got)
+	}
+	// *url.Error 의 Err 가 nil 인 분기.
+	got := redactTransportError(&url.Error{Op: "Get", URL: "http://api.example", Err: nil})
+	if hasHan(got) {
+		t.Errorf("传输错误脱敏结果仍残留韩文：%q", got)
+	}
+	if !strings.Contains(got, "未知错误") {
+		t.Errorf("Err 为 nil 时应为 '未知错误'，实际 %q", got)
+	}
+}
+
+// TestHTTPStatusErrorsLocalized 는 실제 doJSON 왕복으로 상태코드 분류(거부/서버
+// 오류/제한)의 사용자 노출 오류가 한국어인지 확인한다. 127.0.0.1 httptest 로의
+// 전송은 기본 차단이라 이 테스트에서만 명시적으로 허용한다.
+func TestHTTPStatusErrorsLocalized(t *testing.T) {
+	t.Setenv(AllowLocalTargetsEnv, "1")
+	cases := []struct {
+		code int
+		want string
+	}{
+		{http.StatusForbidden, "对方拒绝请求"},
+		{http.StatusInternalServerError, "对方服务异常"},
+		{http.StatusTooManyRequests, "对方限流或超时"},
+	}
+	for _, tc := range cases {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(tc.code)
+			_, _ = w.Write([]byte("body"))
+		}))
+		_, err := doJSON(context.Background(), http.MethodPost, srv.URL, nil, map[string]any{"a": 1})
+		srv.Close()
+		if err == nil {
+			t.Fatalf("HTTP %d 应为错误", tc.code)
+		}
+		assertZh(t, "doJSON(HTTP status)", err.Error())
+		if !strings.Contains(err.Error(), tc.want) {
+			t.Errorf("HTTP %d 错误应包含 %q，实际 %q", tc.code, tc.want, err.Error())
+		}
+	}
+}
+
+// hasHan reports whether s contains any CJK Han ideograph.
+func hasHan(s string) bool {
+	for _, r := range s {
+		if unicode.Is(unicode.Han, r) {
+			return true
+		}
+	}
+	return false
+}

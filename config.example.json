@@ -1,0 +1,23 @@
+{
+  "_comment": "复制为 config.json（或用环境变量 ARTEX_CONFIG 指定其他路径）。本文件只包含 database 与 skill_dir 两项。LLM 等其余配置走环境变量或应用内设置，不写入本文件。",
+
+  "_comment_database": "PostgreSQL 连接。优先级：环境变量 ARTEX_PG_DSN > 本文件的 database。两种写法二选一：(A) 填写下方各字段，或 (B) 只在 database.dsn 填完整连接串。",
+  "database": {
+    "host": "127.0.0.1",
+    "port": 5433,
+    "user": "artex",
+    "password": "",
+    "dbname": "artex",
+    "sslmode": "disable"
+  },
+
+  "_comment_database_dsn": "写法 (B)：删掉上面的 database，改填完整 DSN。dsn 非空时各字段被忽略。",
+  "_example_database_dsn": {
+    "database": {
+      "dsn": "postgres://user:pass@db.example.com:5432/artex?sslmode=require"
+    }
+  },
+
+  "_comment_skill_dir": "技能根目录（一个子目录即一个技能，内含 SKILL.md）。优先级：环境变量 ARTEX_SKILL_DIR > 本字段 > 默认值（可执行文件同级的 skills/）。留空或删除本字段则用默认值。相对路径按当前工作目录解析。",
+  "skill_dir": "/opt/artex/skills"
+}
